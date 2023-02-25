@@ -12,6 +12,7 @@ fn main() {
         .add_state(GameState::AssetLoading)
         .add_system_set(SystemSet::on_enter(GameState::Running).with_system(setup_scene))
         .add_system_set(SystemSet::on_update(GameState::Running).with_system(fish_animator_system))
+        .add_system_set(SystemSet::on_update(GameState::Running).with_system(fish_move_system))
         .run();
 }
 
@@ -29,8 +30,10 @@ struct FishAssets {
     fish_animation: Handle<AnimationClip>,
 }
 
-#[derive(Component)]
-struct Fish;
+#[derive(Component, Default)]
+struct Fish {
+    velocity: Vec3,
+}
 
 fn setup_scene(mut commands: Commands, fish_assets: Res<FishAssets>) {
     commands.spawn(Camera3dBundle {
@@ -67,25 +70,39 @@ fn setup_scene(mut commands: Commands, fish_assets: Res<FishAssets>) {
             transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::Y, Vec3::Z),
             ..default()
         },
-        Fish,
+        Fish::default(),
     ));
 }
 
 fn fish_animator_system(
     fish_assets: Res<FishAssets>,
-    fishes: Query<Entity, With<Fish>>,
+    fishes: Query<(Entity, &Fish)>,
     children: Query<&Children>,
     mut players: Query<&mut AnimationPlayer>,
 ) {
-    for fish in &fishes {
-        for entity in children.iter_descendants(fish) {
-            if let Ok(mut player) = players.get_mut(entity) {
+    fishes.for_each(|(entity, fish)| {
+        for child in children.iter_descendants(entity) {
+            if let Ok(mut player) = players.get_mut(child) {
                 if player.is_added() {
                     player.play(fish_assets.fish_animation.clone()).repeat();
                 }
-    
-                player.set_speed(1.0);
+
+                let speed = fish.velocity.length();
+                let animation_speed = 1.0 + speed;
+                player.set_speed(animation_speed);
             }
         }
-    }
+    });
+}
+
+fn fish_move_system(time: Res<Time>, mut fishes: Query<(&mut Transform, &mut Fish)>) {
+    let delta_time = time.delta_seconds();
+    fishes.for_each_mut(|mut fish| {
+        let delta_position = fish.1.velocity * delta_time;
+        let next_position = fish.0.translation + delta_position;
+        if delta_position.length() > f32::EPSILON {
+            fish.0.look_at(next_position, Vec3::Z);
+        }
+        fish.0.translation = next_position;
+    })
 }
