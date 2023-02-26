@@ -30,6 +30,10 @@ fn main() {
         .add_system_set(
             SystemSet::on_update(GameState::Running).with_system(fish_friction_force_system),
         )
+        .add_system_set(
+            SystemSet::on_update(GameState::Running)
+                .with_system(camera_center_of_mass_track_system),
+        )
         .run();
 }
 
@@ -41,6 +45,10 @@ const COHESION_STRENGTH: f32 = 0.75;
 const SEPARATION_STRENGTH: f32 = 50.0;
 const SEPARATION_RADIUS: f32 = 2.0;
 const ALIGNMENT_STRENGTH: f32 = 0.1;
+
+const CAMERA_TRACKING_DISTANCE_SCALE: f32 = 2.44948974278;
+const CAMERA_TRACKING_ZOOM: f32 = 1.0;
+const CAMERA_TRACKING_DELAY_LERP: f32 = 0.5;
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 enum GameState {
@@ -246,4 +254,29 @@ fn fish_friction_force_system(mut fishes: Query<(&Fish, &mut Friction)>) {
     fishes.for_each_mut(|(fish, mut friction)| {
         friction.force = -1.0 * FRICTION_COEFFICIENT * fish.velocity;
     });
+}
+
+fn camera_center_of_mass_track_system(
+    mut camera: Query<(&Camera, &mut Transform)>,
+    fishes: Query<(&Transform, With<Fish>, Without<Camera>)>,
+) {
+    let positions_summed: Vec3 = fishes
+        .iter()
+        .map(|(transform, _, _)| transform.translation)
+        .sum();
+
+    let count = fishes.iter().count();
+    let center_of_mass = (1.0 / count as f32) * positions_summed;
+
+    let furthest_distance_squared = fishes
+        .iter()
+        .map(|(transform, _, _)| transform.translation.distance_squared(center_of_mass))
+        .fold(0.0_f32, |d1, d2| d1.max(d2));
+
+    let furthest_distance = furthest_distance_squared.sqrt();
+
+    if let Ok((_, mut transform)) = camera.get_single_mut() {
+        let target = Vec3::new(center_of_mass.x, center_of_mass.y, CAMERA_TRACKING_ZOOM * CAMERA_TRACKING_DISTANCE_SCALE * furthest_distance);
+        transform.translation = transform.translation.lerp(target, CAMERA_TRACKING_DELAY_LERP);
+    }
 }
