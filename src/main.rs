@@ -89,20 +89,26 @@ struct Friction {
     force: Vec3,
 }
 
+#[derive(Component, Default)]
+struct CameraCenterOfMassTracking;
+
 fn setup_scene(mut commands: Commands, fish_assets: Res<FishAssets>) {
-    commands.spawn(Camera3dBundle {
-        camera_3d: Camera3d {
-            clear_color: ClearColorConfig::Custom(Color::Rgba {
-                red: 0.4,
-                green: 0.75,
-                blue: 0.85,
-                alpha: 1.0,
-            }),
+    commands.spawn((
+        Camera3dBundle {
+            camera_3d: Camera3d {
+                clear_color: ClearColorConfig::Custom(Color::Rgba {
+                    red: 0.4,
+                    green: 0.75,
+                    blue: 0.85,
+                    alpha: 1.0,
+                }),
+                ..default()
+            },
+            transform: Transform::from_xyz(0.0, 0.0, 100.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        transform: Transform::from_xyz(0.0, 0.0, 100.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    });
+        CameraCenterOfMassTracking,
+    ));
 
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
@@ -257,7 +263,7 @@ fn fish_friction_force_system(mut fishes: Query<(&Fish, &mut Friction)>) {
 }
 
 fn camera_center_of_mass_track_system(
-    mut camera: Query<(&Camera, &mut Transform)>,
+    mut camera: Query<(&Camera, &mut Transform, With<CameraCenterOfMassTracking>)>,
     fishes: Query<(&Transform, With<Fish>, Without<Camera>)>,
 ) {
     let positions_summed: Vec3 = fishes
@@ -275,8 +281,14 @@ fn camera_center_of_mass_track_system(
 
     let furthest_distance = furthest_distance_squared.sqrt();
 
-    if let Ok((_, mut transform)) = camera.get_single_mut() {
-        let target = Vec3::new(center_of_mass.x, center_of_mass.y, CAMERA_TRACKING_ZOOM * CAMERA_TRACKING_DISTANCE_SCALE * furthest_distance);
-        transform.translation = transform.translation.lerp(target, CAMERA_TRACKING_DELAY_LERP);
+    if let Ok((_, mut transform, _)) = camera.get_single_mut() {
+        let target = Vec3::new(
+            center_of_mass.x,
+            center_of_mass.y,
+            CAMERA_TRACKING_ZOOM * CAMERA_TRACKING_DISTANCE_SCALE * furthest_distance,
+        );
+        transform.translation = transform
+            .translation
+            .lerp(target, CAMERA_TRACKING_DELAY_LERP);
     }
 }
