@@ -2,15 +2,8 @@ use std::f32::consts::PI;
 
 use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*};
 use bevy_asset_loader::prelude::*;
-use camera::*;
-use fishes::*;
-use forces::ForcesPlugin;
-use input::click_to_move_system;
 
-mod camera;
-mod fishes;
-mod forces;
-mod input;
+use homekoi::{camera::*, fishes::*, forces::ForcesPlugin, input::click_to_move_system};
 
 fn main() {
     App::new()
