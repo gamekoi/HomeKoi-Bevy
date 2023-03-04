@@ -5,16 +5,19 @@ use bevy_asset_loader::prelude::*;
 use camera::*;
 use fishes::*;
 use forces::ForcesPlugin;
+use input::click_to_move_system;
 
 mod camera;
 mod fishes;
 mod forces;
+mod input;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(ForcesPlugin)
         .add_system(camera_center_of_mass_track_system)
+        .add_system(click_to_move_system)
         .add_loading_state(
             LoadingState::new(GameState::AssetLoading)
                 .continue_to_state(GameState::Running)
@@ -76,6 +79,11 @@ fn setup_scene(mut commands: Commands, fish_assets: Res<FishAssets>) {
             Transform::from_translation(translation).looking_at(translation + direction, Vec3::Z);
         commands.spawn(Fish::new_npc(transform, &fish_assets));
     }
+
+    commands.spawn(Fish::new_player(
+        Transform::from_translation(Vec3::ZERO).looking_at(Vec3::Y, Vec3::Z),
+        &fish_assets,
+    ));
 }
 
 fn random_direction() -> Vec3 {

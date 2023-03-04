@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 const CAMERA_TRACKING_DISTANCE_SCALE: f32 = 2.44948974278;
+const CAMERA_MIN_DISTANCE: f32 = 50.0;
 const CAMERA_TRACKING_ZOOM: f32 = 1.0;
 const CAMERA_TRACKING_DELAY_LERP: f32 = 0.5;
 
@@ -33,7 +34,10 @@ pub fn camera_center_of_mass_track_system(
         let target = Vec3::new(
             center_of_mass.x,
             center_of_mass.y,
-            CAMERA_TRACKING_ZOOM * CAMERA_TRACKING_DISTANCE_SCALE * furthest_distance,
+            f32::max(
+                CAMERA_TRACKING_ZOOM * CAMERA_TRACKING_DISTANCE_SCALE * furthest_distance,
+                CAMERA_MIN_DISTANCE,
+            ),
         );
         transform.translation = transform
             .translation

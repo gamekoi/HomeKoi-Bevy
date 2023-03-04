@@ -3,7 +3,8 @@ use bevy_asset_loader::prelude::*;
 
 use crate::{
     camera::Tracked,
-    forces::{Alignment, Cohesive, Friction, Moveable, Separation},
+    forces::{Alignment, Cohesive, Forceable, Friction, Moveable, Separation},
+    input::ClickToMove,
 };
 
 #[derive(AssetCollection, Resource)]
@@ -48,10 +49,27 @@ impl Fish {
             },
             Fish,
             Moveable::default(),
+            Forceable::default(),
             Friction::default(),
             Separation::default(),
             Cohesive::default(),
             Alignment::default(),
+        )
+    }
+
+    pub fn new_player(transform: Transform, fish_assets: &Res<FishAssets>) -> impl Bundle {
+        (
+            SceneBundle {
+                scene: fish_assets.fish_scene.clone(),
+                transform: transform,
+                ..default()
+            },
+            Fish,
+            Moveable::default(),
+            Separation::default(),
+            Cohesive::default(),
+            Alignment::default(),
+            ClickToMove::default(),
             Tracked::default(),
         )
     }

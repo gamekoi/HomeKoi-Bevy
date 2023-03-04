@@ -13,6 +13,9 @@ pub struct Moveable {
 }
 
 #[derive(Component, Default)]
+pub struct Forceable;
+
+#[derive(Component, Default)]
 pub struct Cohesive {
     force: Vec3,
 }
@@ -65,11 +68,12 @@ pub fn apply_forces_system(
         Option<&Separation>,
         Option<&Alignment>,
         Option<&Friction>,
+        With<Forceable>,
     )>,
 ) {
     let delta_time = time.delta_seconds();
     bodies.for_each_mut(
-        |(mut moveable, cohesive, separation, alignment, friction)| {
+        |(mut moveable, cohesive, separation, alignment, friction, _)| {
             if let Some(c) = cohesive {
                 moveable.velocity += delta_time * c.force;
             }
@@ -86,7 +90,7 @@ pub fn apply_forces_system(
                 moveable.velocity += delta_time * f.force;
             }
 
-            moveable.velocity = moveable.velocity.clamp_length(0.0, MAX_SPEED);
+            moveable.velocity = moveable.velocity.clamp_length_max(MAX_SPEED);
         },
     );
 }
