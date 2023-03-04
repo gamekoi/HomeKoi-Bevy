@@ -4,7 +4,7 @@ use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*};
 use bevy_asset_loader::prelude::*;
 use camera::*;
 use fishes::*;
-use forces::*;
+use forces::ForcesPlugin;
 
 mod camera;
 mod fishes;
@@ -13,6 +13,8 @@ mod forces;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugin(ForcesPlugin)
+        .add_system(camera_center_of_mass_track_system)
         .add_loading_state(
             LoadingState::new(GameState::AssetLoading)
                 .continue_to_state(GameState::Running)
@@ -21,20 +23,6 @@ fn main() {
         .add_state(GameState::AssetLoading)
         .add_system_set(SystemSet::on_enter(GameState::Running).with_system(setup_scene))
         .add_system_set(SystemSet::on_update(GameState::Running).with_system(fish_animator_system))
-        .add_system_set(SystemSet::on_update(GameState::Running).with_system(move_system))
-        .add_system_set(SystemSet::on_update(GameState::Running).with_system(apply_forces_system))
-        .add_system_set(SystemSet::on_update(GameState::Running).with_system(cohesion_force_system))
-        .add_system_set(
-            SystemSet::on_update(GameState::Running).with_system(separation_force_system),
-        )
-        .add_system_set(
-            SystemSet::on_update(GameState::Running).with_system(alignment_force_system),
-        )
-        .add_system_set(SystemSet::on_update(GameState::Running).with_system(friction_force_system))
-        .add_system_set(
-            SystemSet::on_update(GameState::Running)
-                .with_system(camera_center_of_mass_track_system),
-        )
         .run();
 }
 

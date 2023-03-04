@@ -32,6 +32,19 @@ pub struct Friction {
     force: Vec3,
 }
 
+pub struct ForcesPlugin;
+
+impl Plugin for ForcesPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system(move_system)
+            .add_system(apply_forces_system)
+            .add_system(cohesion_force_system)
+            .add_system(separation_force_system)
+            .add_system(alignment_force_system)
+            .add_system(friction_force_system);
+    }
+}
+
 pub fn move_system(time: Res<Time>, mut moveables: Query<(&mut Transform, &Moveable)>) {
     let delta_time = time.delta_seconds();
     moveables.for_each_mut(|(mut transform, moveable)| {
