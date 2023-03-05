@@ -7,7 +7,7 @@ use std::{
 const GROUP_DISTANCE: f32 = 10.0;
 const GROUP_DISTANCE_SQUARED: f32 = GROUP_DISTANCE * GROUP_DISTANCE;
 
-static AVAILABLE_GROUP_ID: AtomicUsize = AtomicUsize::new(0);
+static AVAILABLE_GROUP_ID: AtomicUsize = AtomicUsize::new(1);
 
 pub struct GroupsPlugin;
 
@@ -22,6 +22,20 @@ impl Plugin for GroupsPlugin {
 #[derive(Component, Default)]
 pub struct Groupable {
     pub id: Option<usize>,
+}
+
+impl Groupable {
+    pub fn player_groupable() -> Self {
+        Groupable { id: Some(0) }
+    }
+
+    pub fn is_grouped_with_player(self: &Self) -> bool {
+        if let Some(0) = self.id {
+            return true;
+        }
+
+        false
+    }
 }
 
 struct MergeGroupsEvent(usize, usize);

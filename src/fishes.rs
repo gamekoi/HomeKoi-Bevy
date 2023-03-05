@@ -40,6 +40,17 @@ pub fn fish_animator_system(
     });
 }
 
+pub fn fish_track_system(
+    mut commands: Commands,
+    untracked_fishes: Query<(Entity, &Groupable), (With<Fish>, Without<Tracked>)>,
+) {
+    untracked_fishes.for_each(|(entity, groupable)| {
+        if groupable.is_grouped_with_player() {
+            commands.entity(entity).insert(Tracked::default());
+        }
+    });
+}
+
 impl Fish {
     pub fn new_npc(transform: Transform, fish_assets: &Res<FishAssets>) -> impl Bundle {
         (
@@ -73,7 +84,7 @@ impl Fish {
             Alignment::default(),
             ClickToMove::default(),
             Tracked::default(),
-            Groupable::default(),
+            Groupable::player_groupable(),
         )
     }
 }

@@ -13,6 +13,7 @@ fn main() {
         .add_plugin(ForcesPlugin)
         .add_plugin(GroupsPlugin)
         .add_system(camera_center_of_mass_track_system)
+        .add_system(fish_track_system)
         .add_system(click_to_move_system)
         .add_loading_state(
             LoadingState::new(GameState::AssetLoading)
