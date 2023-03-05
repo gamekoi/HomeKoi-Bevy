@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 
 use crate::{
-    camera::Tracked,
+    camera::{Tracked, TrackedZoomOnly},
     forces::{Alignment, Cohesive, Forceable, Friction, Moveable, Separation, Wander},
     groups::Groupable,
     input::ClickToMove,
@@ -46,7 +46,7 @@ pub fn fish_track_system(
 ) {
     untracked_fishes.for_each(|(entity, groupable)| {
         if groupable.is_grouped_with_player() {
-            commands.entity(entity).insert(Tracked::default());
+            commands.entity(entity).insert(TrackedZoomOnly::default());
         }
     });
 }

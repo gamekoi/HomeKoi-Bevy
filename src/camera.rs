@@ -11,9 +11,13 @@ pub struct TrackingCenterOfMassCamera;
 #[derive(Component, Default)]
 pub struct Tracked;
 
+#[derive(Component, Default)]
+pub struct TrackedZoomOnly;
+
 pub fn camera_center_of_mass_track_system(
     mut camera: Query<(&Camera, &mut Transform, With<TrackingCenterOfMassCamera>)>,
     trackables: Query<(&Transform, With<Tracked>, Without<Camera>)>,
+    zoom_trackables: Query<(&Transform, (With<TrackedZoomOnly>, Without<Camera>, Without<Tracked>))>,
 ) {
     let positions_summed: Vec3 = trackables
         .iter()
@@ -23,10 +27,20 @@ pub fn camera_center_of_mass_track_system(
     let count = trackables.iter().count();
     let center_of_mass = (1.0 / count as f32) * positions_summed;
 
-    let furthest_distance_squared = trackables
+    let trackables_furthest_distance_squared = trackables
         .iter()
         .map(|(transform, _, _)| transform.translation.distance_squared(center_of_mass))
         .fold(0.0_f32, |d1, d2| d1.max(d2));
+
+    let zoom_trackables_furthest_distance_squared = zoom_trackables
+        .iter()
+        .map(|(transform, _)| transform.translation.distance_squared(center_of_mass))
+        .fold(0.0_f32, |d1, d2| d1.max(d2));
+
+    let furthest_distance_squared = f32::max(
+        trackables_furthest_distance_squared,
+        zoom_trackables_furthest_distance_squared,
+    );
 
     let furthest_distance = furthest_distance_squared.sqrt();
 
