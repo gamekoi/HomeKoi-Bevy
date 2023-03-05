@@ -3,14 +3,15 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 use itertools::Itertools;
 
-use crate::groups::Groupable;
+use crate::{groups::Groupable, random::random_direction};
 
 const MAX_SPEED: f32 = 20.0;
 const FRICTION_COEFFICIENT: f32 = 0.01;
-const COHESION_STRENGTH: f32 = 0.75;
+const COHESION_STRENGTH: f32 = 2.0;
 const SEPARATION_STRENGTH: f32 = 50.0;
 const SEPARATION_RADIUS: f32 = 2.0;
-const ALIGNMENT_STRENGTH: f32 = 0.1;
+const ALIGNMENT_STRENGTH: f32 = 0.01;
+const WANDER_STRENGTH: f32 = 1.0;
 
 #[derive(Component, Default)]
 pub struct Moveable {
@@ -40,6 +41,11 @@ pub struct Friction {
     force: Vec3,
 }
 
+#[derive(Component, Default)]
+pub struct Wander {
+    force: Vec3,
+}
+
 pub struct ForcesPlugin;
 
 impl Plugin for ForcesPlugin {
@@ -49,7 +55,8 @@ impl Plugin for ForcesPlugin {
             .add_system(cohesion_force_system)
             .add_system(separation_force_system)
             .add_system(alignment_force_system)
-            .add_system(friction_force_system);
+            .add_system(friction_force_system)
+            .add_system(wander_force_system);
     }
 }
 
@@ -67,18 +74,21 @@ pub fn move_system(time: Res<Time>, mut moveables: Query<(&mut Transform, &Movea
 
 pub fn apply_forces_system(
     time: Res<Time>,
-    mut bodies: Query<(
-        &mut Moveable,
-        Option<&Cohesive>,
-        Option<&Separation>,
-        Option<&Alignment>,
-        Option<&Friction>,
+    mut bodies: Query<
+        (
+            &mut Moveable,
+            Option<&Cohesive>,
+            Option<&Separation>,
+            Option<&Alignment>,
+            Option<&Friction>,
+            Option<&Wander>,
+        ),
         With<Forceable>,
-    )>,
+    >,
 ) {
     let delta_time = time.delta_seconds();
     bodies.for_each_mut(
-        |(mut moveable, cohesive, separation, alignment, friction, _)| {
+        |(mut moveable, cohesive, separation, alignment, friction, wander)| {
             if let Some(c) = cohesive {
                 moveable.velocity += delta_time * c.force;
             }
@@ -93,6 +103,10 @@ pub fn apply_forces_system(
 
             if let Some(f) = friction {
                 moveable.velocity += delta_time * f.force;
+            }
+
+            if let Some(w) = wander {
+                moveable.velocity += delta_time * w.force;
             }
 
             moveable.velocity = moveable.velocity.clamp_length_max(MAX_SPEED);
@@ -130,11 +144,15 @@ pub fn cohesion_force_system(mut cohesives: Query<(&Transform, &mut Cohesive, &G
     });
 }
 
-pub fn separation_force_system(mut separations: Query<(&Transform, &mut Separation)>) {
-    separations.for_each_mut(|(_, mut separation)| separation.force = Vec3::ZERO);
+pub fn separation_force_system(mut separations: Query<(&Transform, &mut Separation, &Groupable)>) {
+    separations.for_each_mut(|(_, mut separation, _)| separation.force = Vec3::ZERO);
 
     let mut iter = separations.iter_combinations_mut();
-    while let Some([(t1, mut s1), (t2, mut s2)]) = iter.fetch_next() {
+    while let Some([(t1, mut s1, g1), (t2, mut s2, g2)]) = iter.fetch_next() {
+        if g1.id == None || g2.id == None {
+            continue;
+        }
+
         let delta = t1.translation - t2.translation;
         let distance = delta.length().abs();
 
@@ -146,6 +164,15 @@ pub fn separation_force_system(mut separations: Query<(&Transform, &mut Separati
             s2.force -= separation_impulse;
         }
     }
+}
+
+pub fn wander_force_system(mut wanders: Query<(&mut Wander, &Groupable)>) {
+    wanders.for_each_mut(|(mut w, g)| {
+        if g.id == None {
+            let strength = WANDER_STRENGTH * rand::random::<f32>();
+            w.force = strength * random_direction();
+        }
+    });
 }
 
 pub fn alignment_force_system(mut cohesives: Query<(&Moveable, &mut Alignment, &Groupable)>) {
@@ -169,10 +196,10 @@ pub fn alignment_force_system(mut cohesives: Query<(&Moveable, &mut Alignment, &
         })
         .collect();
 
-    cohesives.for_each_mut(|(_, mut c, g)| {
+    cohesives.for_each_mut(|(_, mut a, g)| {
         if let Some(id) = g.id {
             if let Some(alignment_force) = group_alignment_force_map.get(&id) {
-                c.force = *alignment_force;
+                a.force = *alignment_force;
             }
         }
     });

@@ -1,10 +1,9 @@
-use std::f32::consts::PI;
-
 use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*};
 use bevy_asset_loader::prelude::*;
 
 use homekoi::{
     camera::*, fishes::*, forces::ForcesPlugin, groups::GroupsPlugin, input::click_to_move_system,
+    random::random_direction,
 };
 
 fn main() {
@@ -27,7 +26,7 @@ fn main() {
 }
 
 const FISH_TO_SPAWN: usize = 100;
-const SPAWN_RADIUS: f32 = 50.0;
+const SPAWN_RADIUS: f32 = 1000.0;
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 enum GameState {
@@ -81,11 +80,4 @@ fn setup_scene(mut commands: Commands, fish_assets: Res<FishAssets>) {
         Transform::from_translation(Vec3::ZERO).looking_at(Vec3::Y, Vec3::Z),
         &fish_assets,
     ));
-}
-
-fn random_direction() -> Vec3 {
-    let angle_ratio: f32 = rand::random();
-    let radians = 2.0 * PI * angle_ratio;
-
-    Vec3::new(radians.cos(), radians.sin(), 0.0)
 }
