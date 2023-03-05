@@ -11,7 +11,8 @@ const COHESION_STRENGTH: f32 = 2.0;
 const SEPARATION_STRENGTH: f32 = 50.0;
 const SEPARATION_RADIUS: f32 = 2.0;
 const ALIGNMENT_STRENGTH: f32 = 0.01;
-const WANDER_STRENGTH: f32 = 1.0;
+const WANDER_STRENGTH: f32 = 5.0;
+const WANDER_CHANCE: f32 = 0.1;
 
 #[derive(Component, Default)]
 pub struct Moveable {
@@ -168,7 +169,7 @@ pub fn separation_force_system(mut separations: Query<(&Transform, &mut Separati
 
 pub fn wander_force_system(mut wanders: Query<(&mut Wander, &Groupable)>) {
     wanders.for_each_mut(|(mut w, g)| {
-        if g.id == None {
+        if g.id == None && rand::random::<f32>() < WANDER_CHANCE {
             let strength = WANDER_STRENGTH * rand::random::<f32>();
             w.force = strength * random_direction();
         }
