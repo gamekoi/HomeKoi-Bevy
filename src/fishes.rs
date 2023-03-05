@@ -4,6 +4,7 @@ use bevy_asset_loader::prelude::*;
 use crate::{
     camera::Tracked,
     forces::{Alignment, Cohesive, Forceable, Friction, Moveable, Separation},
+    groups::Groupable,
     input::ClickToMove,
 };
 
@@ -54,6 +55,7 @@ impl Fish {
             Separation::default(),
             Cohesive::default(),
             Alignment::default(),
+            Groupable::default(),
         )
     }
 
@@ -71,6 +73,7 @@ impl Fish {
             Alignment::default(),
             ClickToMove::default(),
             Tracked::default(),
+            Groupable::default(),
         )
     }
 }

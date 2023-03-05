@@ -3,12 +3,15 @@ use std::f32::consts::PI;
 use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*};
 use bevy_asset_loader::prelude::*;
 
-use homekoi::{camera::*, fishes::*, forces::ForcesPlugin, input::click_to_move_system};
+use homekoi::{
+    camera::*, fishes::*, forces::ForcesPlugin, groups::GroupsPlugin, input::click_to_move_system,
+};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(ForcesPlugin)
+        .add_plugin(GroupsPlugin)
         .add_system(camera_center_of_mass_track_system)
         .add_system(click_to_move_system)
         .add_loading_state(

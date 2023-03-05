@@ -1,4 +1,9 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
+use itertools::Itertools;
+
+use crate::groups::Groupable;
 
 const MAX_SPEED: f32 = 20.0;
 const FRICTION_COEFFICIENT: f32 = 0.01;
@@ -95,16 +100,34 @@ pub fn apply_forces_system(
     );
 }
 
-pub fn cohesion_force_system(mut cohesives: Query<(&Transform, &mut Cohesive)>) {
-    let positions_summed: Vec3 = cohesives
+pub fn cohesion_force_system(mut cohesives: Query<(&Transform, &mut Cohesive, &Groupable)>) {
+    let group_com_map: HashMap<usize, Vec3> = cohesives
         .iter()
-        .map(|(transform, _)| transform.translation)
-        .sum();
+        .filter_map(|(t, c, g)| match g.id {
+            Some(id) => Some((t, c, id)),
+            None => None,
+        })
+        .group_by(|(_, _, id)| *id)
+        .into_iter()
+        .map(|(id, group)| {
+            let (position_summed, count) = group
+                .fold((Vec3::ZERO, 0), |(com, count), (t, _, _)| {
+                    (com + t.translation, count + 1)
+                });
 
-    let count = cohesives.iter().count();
-    let center_of_mass = (1.0 / count as f32) * positions_summed;
-    cohesives
-        .for_each_mut(|(t, mut c)| c.force = COHESION_STRENGTH * (center_of_mass - t.translation));
+            let group_center_of_mass = (1.0 / count as f32) * position_summed;
+
+            return (id, group_center_of_mass);
+        })
+        .collect();
+
+    cohesives.for_each_mut(|(t, mut c, g)| {
+        if let Some(id) = g.id {
+            if let Some(group_center_of_mass) = group_com_map.get(&id) {
+                c.force = COHESION_STRENGTH * (*group_center_of_mass - t.translation);
+            }
+        }
+    });
 }
 
 pub fn separation_force_system(mut separations: Query<(&Transform, &mut Separation)>) {
@@ -125,13 +148,34 @@ pub fn separation_force_system(mut separations: Query<(&Transform, &mut Separati
     }
 }
 
-pub fn alignment_force_system(mut cohesives: Query<(&Moveable, &mut Alignment)>) {
-    let velocity_summed: Vec3 = cohesives.iter().map(|(fish, _)| fish.velocity).sum();
+pub fn alignment_force_system(mut cohesives: Query<(&Moveable, &mut Alignment, &Groupable)>) {
+    let group_alignment_force_map: HashMap<usize, Vec3> = cohesives
+        .iter()
+        .filter_map(|(m, a, g)| match g.id {
+            Some(id) => Some((m, a, id)),
+            None => None,
+        })
+        .group_by(|(_, _, id)| *id)
+        .into_iter()
+        .map(|(id, group)| {
+            let (velocity_summed, count) = group
+                .fold((Vec3::ZERO, 0), |(velocity, count), (m, _, _)| {
+                    (velocity + m.velocity, count + 1)
+                });
 
-    let count = cohesives.iter().count();
-    let average_velocity = (1.0 / count as f32) * velocity_summed;
-    let alignment_force = ALIGNMENT_STRENGTH * average_velocity;
-    cohesives.for_each_mut(|(_, mut c)| c.force = alignment_force);
+            let average_velocity = (1.0 / count as f32) * velocity_summed;
+
+            return (id, ALIGNMENT_STRENGTH * average_velocity);
+        })
+        .collect();
+
+    cohesives.for_each_mut(|(_, mut c, g)| {
+        if let Some(id) = g.id {
+            if let Some(alignment_force) = group_alignment_force_map.get(&id) {
+                c.force = *alignment_force;
+            }
+        }
+    });
 }
 
 pub fn friction_force_system(mut moveables: Query<(&Moveable, &mut Friction)>) {
