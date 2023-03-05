@@ -17,7 +17,10 @@ pub struct TrackedZoomOnly;
 pub fn camera_center_of_mass_track_system(
     mut camera: Query<(&Camera, &mut Transform, With<TrackingCenterOfMassCamera>)>,
     trackables: Query<(&Transform, With<Tracked>, Without<Camera>)>,
-    zoom_trackables: Query<(&Transform, (With<TrackedZoomOnly>, Without<Camera>, Without<Tracked>))>,
+    zoom_trackables: Query<(
+        &Transform,
+        (With<TrackedZoomOnly>, Without<Camera>, Without<Tracked>),
+    )>,
 ) {
     let positions_summed: Vec3 = trackables
         .iter()

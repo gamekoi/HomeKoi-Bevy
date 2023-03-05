@@ -22,6 +22,9 @@ fn main() {
         .add_state(GameState::AssetLoading)
         .add_system_set(SystemSet::on_enter(GameState::Running).with_system(setup_scene))
         .add_system_set(SystemSet::on_update(GameState::Running).with_system(fish_animator_system))
+        .add_system_set(
+            SystemSet::on_update(GameState::Running).with_system(fish_joined_player_cue_system),
+        )
         .run();
 }
 
@@ -34,7 +37,7 @@ enum GameState {
     Running,
 }
 
-fn setup_scene(mut commands: Commands, fish_assets: Res<FishAssets>) {
+fn setup_scene(mut commands: Commands, fish_assets: Res<FishAssets>, audio: Res<Audio>) {
     commands.spawn((
         Camera3dBundle {
             camera_3d: Camera3d {
@@ -80,4 +83,6 @@ fn setup_scene(mut commands: Commands, fish_assets: Res<FishAssets>) {
         Transform::from_translation(Vec3::ZERO).looking_at(Vec3::Y, Vec3::Z),
         &fish_assets,
     ));
+
+    fish_assets.start_background_music(audio);
 }

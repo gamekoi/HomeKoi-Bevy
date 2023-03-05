@@ -4,7 +4,7 @@ use bevy_asset_loader::prelude::*;
 use crate::{
     camera::{Tracked, TrackedZoomOnly},
     forces::{Alignment, Cohesive, Forceable, Friction, Moveable, Separation, Wander},
-    groups::Groupable,
+    groups::{Groupable, JoinedPlayerEvent},
     input::ClickToMove,
 };
 
@@ -14,6 +14,10 @@ pub struct FishAssets {
     fish_scene: Handle<Scene>,
     #[asset(path = "models/fish.glb#Animation0")]
     fish_animation: Handle<AnimationClip>,
+    #[asset(path = "sounds/background.ogg")]
+    background_music: Handle<AudioSource>,
+    #[asset(path = "sounds/bubbles.ogg")]
+    bubbles_sfx: Handle<AudioSource>,
 }
 
 #[derive(Component, Default)]
@@ -38,6 +42,17 @@ pub fn fish_animator_system(
             }
         }
     });
+}
+
+pub fn fish_joined_player_cue_system(
+    ev_joined: EventReader<JoinedPlayerEvent>,
+    fish_assets: Res<FishAssets>,
+    audio: Res<Audio>,
+) {
+    if !ev_joined.is_empty() {
+        ev_joined.clear();
+        audio.play(fish_assets.bubbles_sfx.clone());
+    }
 }
 
 pub fn fish_track_system(
@@ -87,5 +102,17 @@ impl Fish {
             Tracked::default(),
             Groupable::player_groupable(),
         )
+    }
+}
+
+impl FishAssets {
+    pub fn start_background_music(&self, audio: Res<Audio>) {
+        audio.play_with_settings(
+            self.background_music.clone(),
+            PlaybackSettings {
+                repeat: true,
+                ..default()
+            },
+        );
     }
 }

@@ -15,7 +15,8 @@ impl Plugin for GroupsPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(group_by_proximity_system)
             .add_system(merge_groups_system)
-            .add_event::<MergeGroupsEvent>();
+            .add_event::<MergeGroupsEvent>()
+            .add_event::<JoinedPlayerEvent>();
     }
 }
 
@@ -40,9 +41,12 @@ impl Groupable {
 
 struct MergeGroupsEvent(usize, usize);
 
+pub struct JoinedPlayerEvent;
+
 fn group_by_proximity_system(
     mut groupables: Query<(&mut Groupable, &Transform)>,
     mut ev_merge: EventWriter<MergeGroupsEvent>,
+    mut ev_join: EventWriter<JoinedPlayerEvent>,
 ) {
     let mut iter = groupables.iter_combinations_mut();
     while let Some([(mut g1, t1), (mut g2, t2)]) = iter.fetch_next() {
@@ -53,10 +57,23 @@ fn group_by_proximity_system(
                     g1.id = Some(group_id);
                     g2.id = Some(group_id);
                 }
-                (Some(id), None) => g2.id = Some(id),
-                (None, Some(id)) => g1.id = Some(id),
+                (Some(id), None) => {
+                    if id == 0 {
+                        ev_join.send(JoinedPlayerEvent);
+                    }
+                    g2.id = Some(id)
+                }
+                (None, Some(id)) => {
+                    if id == 0 {
+                        ev_join.send(JoinedPlayerEvent);
+                    }
+                    g1.id = Some(id)
+                }
                 (Some(id1), Some(id2)) => {
                     if id1 != id2 {
+                        if id1 == 0 || id2 == 0 {
+                            ev_join.send(JoinedPlayerEvent);
+                        }
                         ev_merge.send(MergeGroupsEvent(id1, id2));
                     }
                 }
