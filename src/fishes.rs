@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
+use bevy_rapier3d::prelude::RigidBody::KinematicPositionBased;
 
 use crate::{
     camera::{Tracked, TrackedZoomOnly},
     forces::{Alignment, Cohesive, Forceable, Friction, Moveable, Separation, Wander},
-    groups::{Groupable, JoinedPlayerEvent},
+    groups::{Groupable, GroupableBundle, JoinedPlayerEvent},
     input::ClickToMove,
 };
 
@@ -82,7 +83,7 @@ impl Fish {
             Cohesive::default(),
             Alignment::default(),
             Wander::default(),
-            Groupable::default(),
+            GroupableBundle::new(Groupable::default(), KinematicPositionBased),
         )
     }
 
@@ -100,7 +101,7 @@ impl Fish {
             Alignment::default(),
             ClickToMove::default(),
             Tracked::default(),
-            Groupable::player_groupable(),
+            GroupableBundle::new(Groupable::player_groupable(), KinematicPositionBased),
         )
     }
 }

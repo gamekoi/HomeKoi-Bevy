@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::RapierContext;
 use itertools::Itertools;
 
 use crate::{groups::Groupable, random::random_direction};
@@ -145,24 +146,24 @@ pub fn cohesion_force_system(mut cohesives: Query<(&Transform, &mut Cohesive, &G
     });
 }
 
-pub fn separation_force_system(mut separations: Query<(&Transform, &mut Separation, &Groupable)>) {
-    separations.for_each_mut(|(_, mut separation, _)| separation.force = Vec3::ZERO);
+pub fn separation_force_system(
+    rapier: Res<RapierContext>,
+    mut separations: Query<(&Transform, &mut Separation)>,
+) {
+    separations.for_each_mut(|(_, mut separation)| separation.force = Vec3::ZERO);
 
-    let mut iter = separations.iter_combinations_mut();
-    while let Some([(t1, mut s1, g1), (t2, mut s2, g2)]) = iter.fetch_next() {
-        if g1.id == None || g2.id == None {
-            continue;
-        }
+    for (e1, e2, _) in rapier.intersection_pairs() {
+        if let Ok([(t1, mut s1), (t2, mut s2)]) = separations.get_many_mut([e1, e2]) {
+            let delta = t1.translation - t2.translation;
+            let distance = delta.length().abs();
 
-        let delta = t1.translation - t2.translation;
-        let distance = delta.length().abs();
-
-        if distance > f32::EPSILON {
-            let r = distance / SEPARATION_RADIUS;
-            let r3 = r * r * r;
-            let separation_impulse = (SEPARATION_STRENGTH / r3) * delta;
-            s1.force += separation_impulse;
-            s2.force -= separation_impulse;
+            if distance > f32::EPSILON {
+                let r = distance / SEPARATION_RADIUS;
+                let r3 = r * r * r;
+                let separation_impulse = (SEPARATION_STRENGTH / r3) * delta;
+                s1.force += separation_impulse;
+                s2.force -= separation_impulse;
+            }
         }
     }
 }

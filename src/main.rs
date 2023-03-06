@@ -1,6 +1,7 @@
 use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*};
 use bevy_asset_loader::prelude::*;
 
+use bevy_rapier3d::prelude::{NoUserData, RapierPhysicsPlugin};
 use homekoi::{
     camera::*, fishes::*, forces::ForcesPlugin, groups::GroupsPlugin, input::click_to_move_system,
     random::random_direction,
@@ -9,6 +10,7 @@ use homekoi::{
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(ForcesPlugin)
         .add_plugin(GroupsPlugin)
         .add_system(camera_center_of_mass_track_system)
